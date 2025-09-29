@@ -48,6 +48,7 @@ const LoginPage = () => {
             </>
           )}
           
+          
           {
             currState === "Sign Up" && isDataSubmitted &&(
               <textarea onChange={(e)=>setBio(e.target.value)} value={bio}
