@@ -1,5 +1,7 @@
+import cloudinary from "../lib/cloudinary.js"
 import Message from "../models/message.js"
 import User from "../models/User.js"
+
 
 // get all the users expect the logged in user
 
@@ -19,10 +21,79 @@ export const getUserForSidebar = async(req,res)=>{
         })
 
         await promise.all(promises)
-        res.json({sucess: true, user: filterUsers, unseenMessages})
+        res.json({success: true, user: filterUsers, unseenMessages})
     } catch (error) {
         console.log(error.message)
-        res.json({sucess: false, message: error.message})
+        res.json({success: false, message: error.message})
         
+    }
+}
+
+// Get message for selected user 
+
+export const getMessages = async (req,res)=>{
+    try {
+        const {id:selectedUserId} = req.params;
+        const myId = req.user.id;
+
+        const messages=await Message.find({
+            $or:[
+                {senderId: myId, receiverId: selectedUserId},
+                {senderId: selectedUserId, receiverId: myId},
+            ]
+        })
+        await Message.updateMany({senderId: selectedUserId, receiverId:myId}, {seen: true})
+        
+        res.json({success: true, messages})
+
+    } catch (error) {
+        console.log(error.message);
+        res.json({success: false, message: error.message})
+    }
+}
+
+
+// api to mark message as seen using message id
+
+export const markMessageAsSeen = async(req,res)=>{
+    try {
+        const {id} = req.params
+        await Message.findByIdAndUpdate(id,{seen: true})
+
+        res.json({success: true})
+    } catch (error) {
+        console.log(error.message);
+        res.json({success: false, message: error.message})
+    }
+}
+
+// send message to selected user
+
+export const sendMessage = async(req,res)=>{
+    try {
+        const {text, image} = req.body
+
+        const receiverId = req.params.id;
+        const senderId = req.user._id;
+
+        let imageUrl;
+        if(image){
+            const uploadResponse = await cloudinary.uploader.upload(image)
+            imageUrl = uploadResponse.secure_url
+
+        }
+
+        const newMessage = await Message.create({
+            senderId,
+            receiverId,
+            text,
+            image: imageUrl
+        })
+
+        res.json({success: true, newMessage})
+
+    } catch (error) {
+       console.log(error.message);
+        res.json({sucess: false, message: error.message}) 
     }
 }
