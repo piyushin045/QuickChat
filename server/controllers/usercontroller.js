@@ -6,15 +6,15 @@ import cloudinary from "../lib/cloudinary.js";
 
 
 // Signup a new user
-export const signup = async ()=>{
+export const signup = async (req,res)=>{
     const {fullName,email,password,bio} = req.body;
     try {
        if(!fullName || !email || !password || !bio){
-        return resizeBy.json({success: false, message: "missing details"})
+        return res.json({success: false, message: "missing details"})
        } 
        const user = await User.findOne({email})
        if(user){
-        return resizeBy.json({success: false, message: "Account already exists"})
+        return res.json({success: false, message: "Account already exists"})
        }
 
        const salt = await bcrypt.genSalt(10);
@@ -45,7 +45,9 @@ export const login = async (req,res)=>{
         const {email,password} = req.body;
 
         const userData = await User.findOne({email})
-
+        if(!userData){
+            return res.json({success: false, message: "User not found"})
+        }
         const ispasswordCorrect = await bcrypt.compare(password, userData.password)
 
         if(!ispasswordCorrect){
@@ -64,7 +66,7 @@ export const login = async (req,res)=>{
 }
 
 // controller to check if user is authenticated
-export const checkAuth = ()=>{
+export const checkAuth = (req,res)=>{
     res.json({success: true, user: req.user});
 }
 
@@ -78,7 +80,7 @@ export const updateProfile = async(req,res)=>{
         let updatedUser
 
         if(!profilePic){
-            await User.findByIdAndUpdate(userId,{bio,fullName},{new: true})
+           updatedUser = await User.findByIdAndUpdate(userId,{bio,fullName},{new: true})
         }
         else{
             const upload = await cloudinary.uploader.upload(profilePic)
